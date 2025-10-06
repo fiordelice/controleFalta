@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Registro</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header h1 {
+      font-weight: 700;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    form label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #34495e;
+    }
+    form input[type="text"],
+    form input[type="date"],
+    form select,
+    form textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    form textarea {
+      resize: vertical;
+    }
+    form .flex-row {
+      display: flex;
+      gap: 15px;
+    }
+    form .flex-row > div {
+      flex: 1;
+    }
+    form button {
+      margin-top: 25px;
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    form button:hover {
+      background: #2980b9;
+    }
+    form .delete-button {
+      margin-top: 20px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    form .delete-button:hover {
+      background: #c0392b;
+    }
+    #alertMessage {
+      color: red;
+      font-weight: 700;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Editar Registro</h1>
+  </header>
+  <main>
+    <form id="formEditRegistro">
+      <div class="flex-row">
+        <div>
+          <label for="name">Nome Completo:</label>
+          <input type="text" id="name" required />
+        </div>
+        <div>
+          <label for="cs">CS:</label>
+          <input type="text" id="cs" required />
+        </div>
+      </div>
+
+      <label for="date">Data da Ocorrência:</label>
+      <input type="date" id="date" required />
+
+      <div class="flex-row">
+        <div>
+          <label for="entrada">Entrada:</label>
+          <input type="text" id="entrada" placeholder="Ex: 08:00" />
+        </div>
+        <div>
+          <label for="saida">Saída:</label>
+          <input type="text" id="saida" placeholder="Ex: 17:30" />
+        </div>
+      </div>
+
+      <div class="flex-row">
+        <div>
+          <label for="atestado">Atestado:</label>
+          <select id="atestado" required>
+            <option value="Não">Não</option>
+            <option value="Sim">Sim</option>
+          </select>
+        </div>
+        <div>
+          <label for="motivo">Motivo (se houver):</label>
+          <textarea id="motivo" rows="2" placeholder="Descreva o motivo da falta ou justificativa"></textarea>
+        </div>
+      </div>
+
+      <button type="submit">Salvar Alterações</button>
+      <button type="button" class="delete-button" id="deleteButton">Excluir Registro</button>
+
+      <p id="alertMessage"></p>
+    </form>
+  </main>
+
+<script>
+  const formEditRegistro = document.getElementById('formEditRegistro');
+  const alertMessage = document.getElementById('alertMessage');
+  const deleteButton = document.getElementById('deleteButton');
+
+  // Carregar o registro a ser editado
+  const registros = JSON.parse(localStorage.getItem('registros') || '[]');
+  const editIndex = localStorage.getItem('editIndex');
+  const registro = registros[editIndex];
+
+  // Preencher o formulário com os dados do registro
+  document.getElementById('name').value = registro.name;
+  document.getElementById('cs').value = registro.cs;
+  document.getElementById('date').value = registro.date;
+  document.getElementById('entrada').value = registro.entrada || '';
+  document.getElementById('saida').value = registro.saida || '';
+  document.getElementById('atestado').value = registro.atestado;
+  document.getElementById('motivo').value = registro.motivo || '';
+
+  // Salvar alterações
+  formEditRegistro.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const updatedRegistro = {
+      name: document.getElementById('name').value,
+      cs: document.getElementById('cs').value,
+      date: document.getElementById('date').value,
+      entrada: document.getElementById('entrada').value,
+      saida: document.getElementById('saida').value,
+      atestado: document.getElementById('atestado').value,
+      motivo: document.getElementById('motivo').value,
+    };
+
+    registros[editIndex] = updatedRegistro;
+    localStorage.setItem('registros', JSON.stringify(registros));
+    alertMessage.innerHTML = 'Registro atualizado com sucesso!';
+    alertMessage.style.color = 'green';
+
+    // Redirecionar após 2 segundos
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 2000);
+  });
+
+  // Excluir registro
+  deleteButton.addEventListener('click', () => {
+    const confirmDelete = confirm("Tem certeza que deseja excluir este registro?");
+    if (confirmDelete) {
+      registros.splice(editIndex, 1);  // Remove o registro
+      localStorage.setItem('registros', JSON.stringify(registros));
+
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    }
+  });
+</script>
+
+</body>
+</html>

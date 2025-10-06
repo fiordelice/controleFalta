@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Controle de Faltas e Justificativas</title>
+  <style>
+    /* ... seu CSS permanece igual ... */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header h1 {
+      font-weight: 700;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    form label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    form input[type="text"],
+    form input[type="date"],
+    form select,
+    form textarea {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    form textarea {
+      resize: vertical;
+    }
+    form .flex-row {
+      display: flex;
+      gap: 15px;
+    }
+    form .flex-row > div {
+      flex: 1;
+    }
+    form button {
+      margin-top: 25px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    form button:hover {
+      background: #219150;
+    }
+    #alertMessage {
+      color: red;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .filter-section {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .filter-section input {
+      padding: 8px 12px;
+      font-size: 16px;
+      width: 200px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .filter-section button {
+      margin-left: 10px;
+      padding: 9px 18px;
+      font-weight: 700;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #2980b9;
+      color: white;
+      transition: background 0.3s;
+    }
+    .filter-section button:hover {
+      background-color: #1c5d85;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      box-shadow: 0 0 12px rgba(0,0,0,0.05);
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #34495e;
+      color: white;
+      font-weight: 700;
+    }
+    tbody tr:hover {
+      background-color: #f1f7fc;
+    }
+    .btn-export-month {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-export-month:hover {
+      background-color: #2c80b4;
+    }
+    .btn-export-all {
+      margin-top: 10px;
+      background-color: #e67e22;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      display: block;
+      width: 180px;
+      margin-left: auto;
+    }
+    .btn-export-all:hover {
+      background-color: #cf6f1f;
+    }
+    .alert-warning {
+      background-color: #ffcccc;
+      border-left: 6px solid #e74c3c;
+      padding: 10px 15px;
+      margin: 20px 0;
+      font-weight: 700;
+      color: #b03a2e;
+      border-radius: 4px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn-edit {
+      background-color: #6473ff;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-edit:hover {
+      background-color: #6473ff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Controle de Faltas e Justificativas</h1>
+  </header>
+  <main class="container">
+    <form id="formRegistro">
+      <div class="flex-row">
+        <div>
+          <label for="name">Nome Completo:</label>
+          <input type="text" id="name" required />
+        </div>
+        <div>
+          <label for="cs">CS:</label>
+          <input type="text" id="cs" required />
+        </div>
+      </div>
+
+      <label for="date">Data da Ocorrência:</label>
+      <input type="date" id="date" required />
+
+      <div class="flex-row">
+        <div>
+          <label for="entrada">Entrada:</label>
+          <input type="text" id="entrada" placeholder="Ex: 08:00" />
+        </div>
+        <div>
+          <label for="saida">Saída:</label>
+          <input type="text" id="saida" placeholder="Ex: 17:30" />
+        </div>
+      </div>
+
+      <div class="flex-row">
+        <div>
+          <label for="atestado">Atestado:</label>
+          <select id="atestado" required>
+            <option value="Não">Não</option>
+            <option value="Sim">Sim</option>
+          </select>
+        </div>
+        <div>
+          <label for="motivo">Motivo (se houver):</label>
+          <textarea id="motivo" rows="2" placeholder="Descreva o motivo da falta ou justificativa"></textarea>
+        </div>
+      </div>
+
+      <button type="submit">Registrar Ocorrência</button>
+      <p id="alertMessage"></p>
+    </form>
+
+    <div class="filter-section">
+      <input type="text" id="filterCS" placeholder="Digite CS para filtrar faltas sem justificativa" />
+      <button id="btnFilter">Filtrar</button>
+    </div>
+
+    <table id="registrosTable" aria-label="Tabela de registros">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CS</th>
+          <th>Data Ocorrência</th>
+          <th>Entrada</th>
+          <th>Saída</th>
+          <th>Atestado</th>
+          <th>Motivo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="8" style="text-align:right;">
+            <button class="btn-export-all" id="exportAllBtn">Exportar Excel (Ano Completo)</button>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </main>
+
+  <div id="alertWarning" class="alert-warning" style="display:none;"></div>
+
+  <!-- Bibliotecas externas que você já usava -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Adicionando Firebase (versão compatível para navegador) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+
+  <script>
+    // Configuração do seu Firebase (use seus valores)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBdvUidNk2NewiYxTqSPEyxCDpCGpCgvNQ",
+      authDomain: "controlefaltas-7cf63.firebaseapp.com",
+      projectId: "controlefaltas-7cf63",
+      storageBucket: "controlefaltas-7cf63.firebasestorage.app",
+      messagingSenderId: "240078440869",
+      appId: "1:240078440869:web:0daafd0f16acd183cfc04c",
+      measurementId: "G-HSCWY7DCB1"
+    };
+
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics(); // opcional, pode comentar se não usar
+    const db = firebase.firestore();
+
+    // --- MANTER TUDO que já estava funcionando ---
+    const registros = JSON.parse(localStorage.getItem('registros') || '[]');
+    const formRegistro = document.getElementById('formRegistro');
+    const alertMessage = document.getElementById('alertMessage');
+    const filterCSInput = document.getElementById('filterCS');
+    const btnFilter = document.getElementById('btnFilter');
+    const registrosTableBody = document.querySelector('#registrosTable tbody');
+    const alertWarning = document.getElementById('alertWarning');
+    const exportAllBtn = document.getElementById('exportAllBtn');
+
+    function saveStorage() {
+      localStorage.setItem('registros', JSON.stringify(registros));
+    }
+
+    function formatarData(data) {
+      const [ano, mes, dia] = data.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function agruparPorMes(regs) {
+      const meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+
+      return regs.reduce((acc, reg) => {
+        const [ano, mes] = reg.date.split('-');
+        const mesAno = `${meses[parseInt(mes, 10) - 1]}/${ano}`;
+        if (!acc[mesAno]) acc[mesAno] = [];
+        acc[mesAno].push(reg);
+        return acc;
+      }, {});
+    }
+
+    function renderTable(dados, filtros = '') {
+      registrosTableBody.innerHTML = '';
+
+      const filtroCS = filtros || filterCSInput.value;
+      const filteredRegs = dados.filter(reg => !filtroCS || reg.cs.includes(filtroCS));
+
+      const registrosAgrupados = agruparPorMes(filteredRegs);
+
+      for (const mesAno in registrosAgrupados) {
+        const trHeader = document.createElement('tr');
+        const tdHeader = document.createElement('td');
+        tdHeader.colSpan = 8;
+        tdHeader.style.backgroundColor = '#2c3e50';
+        tdHeader.style.color = 'white';
+        tdHeader.style.fontWeight = 'bold';
+        tdHeader.textContent = mesAno;
+        trHeader.appendChild(tdHeader);
+        registrosTableBody.appendChild(trHeader);
+
+        registrosAgrupados[mesAno].forEach((reg, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${reg.name}</td>
+            <td>${reg.cs}</td>
+            <td>${formatarData(reg.date)}</td>
+            <td>${reg.entrada || 'N/A'}</td>
+            <td>${reg.saida || 'N/A'}</td>
+            <td>${reg.atestado}</td>
+            <td>${reg.motivo || 'N/A'}</td>
+            <td><button class="btn-edit" onclick="editFirestoreRegistro('${reg.id}')">Editar</button></td>
+          `;
+          registrosTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    // Nova função para carregar do Firestore
+    function carregarRegistros(filtroCS = '') {
+      db.collection('registros').get()
+        .then((querySnapshot) => {
+          const dados = [];
+          querySnapshot.forEach((doc) => {
+            const obj = doc.data();
+            obj.id = doc.id;
+            dados.push(obj);
+          });
+          renderTable(dados, filtroCS);
+        })
+        .catch((error) => {
+          console.error("Erro ao buscar registros do Firestore:", error);
+        });
+    }
+
+    // Função de edição (apenas exemplo; você pode adaptar)
+    function editFirestoreRegistro(docId) {
+      // Aqui você pode carregar dados do documento com ID = docId e redirecionar para página editar, etc
+      // Exemplo simples:
+      db.collection('registros').doc(docId).get()
+        .then((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            // Por exemplo: armazenar no localStorage ou sessionStorage para passar para página editar
+            sessionStorage.setItem('editRegistroFirestore', JSON.stringify({ id: docId, data }));
+            window.location.href = 'editar.html'; 
+          }
+        });
+    }
+
+    btnFilter.addEventListener('click', () => {
+      const filtroCS = filterCSInput.value;
+      carregarRegistros(filtroCS);
+    });
+
+    exportAllBtn.addEventListener('click', () => {
+      // Se quiser basear no Firestore, busque todos e exporte
+      db.collection('registros').get()
+        .then((qs) => {
+          const todos = [];
+          qs.forEach((doc) => {
+            todos.push(doc.data());
+          });
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(todos);
+          XLSX.utils.book_append_sheet(wb, ws, "Faltas e Justificativas");
+          XLSX.writeFile(wb, "faltas_justificativas.xlsx");
+        });
+    });
+
+    formRegistro.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const newRegistro = {
+        name: document.getElementById('name').value,
+        cs: document.getElementById('cs').value,
+        date: document.getElementById('date').value,
+        entrada: document.getElementById('entrada').value,
+        saida: document.getElementById('saida').value,
+        atestado: document.getElementById('atestado').value,
+        motivo: document.getElementById('motivo').value,
+      };
+
+      // Salva no Firestore
+      db.collection('registros').add(newRegistro)
+        .then(() => {
+          alertMessage.innerHTML = 'Registro salvo com sucesso!';
+          alertMessage.style.color = 'green';
+          formRegistro.reset();
+          carregarRegistros();
+        })
+        .catch((error) => {
+          console.error("Erro ao salvar no Firestore:", error);
+          alertMessage.innerHTML = 'Erro ao salvar.';
+          alertMessage.style.color = 'red';
+        });
+
+      // Também mantém no localStorage (se quiser manter sincronização local)
+      registros.push(newRegistro);
+      saveStorage();
+
+    });
+
+    // Ao carregar a página, buscar do Firestore
+    carregarRegistros();
+
+  </script>
+</body>
+</html>
