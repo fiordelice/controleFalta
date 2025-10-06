@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Controle de Faltas e Justificativas</title>
   <style>
-    /* ... seu CSS permanece igual ... */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f0f2f5;
@@ -180,6 +179,17 @@
     .btn-edit:hover {
       background-color: #6473ff;
     }
+    .btn-delete {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-delete:hover {
+      background-color: #c0392b;
+    }
   </style>
 </head>
 <body>
@@ -262,16 +272,16 @@
 
   <div id="alertWarning" class="alert-warning" style="display:none;"></div>
 
-  <!-- Bibliotecas externas que você já usava -->
+  <!-- Bibliotecas externas -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Adicionando Firebase (versão compatível para navegador) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 
   <script>
-    // Configuração do seu Firebase (use seus valores)
+    // Configuração Firebase (seus dados)
     const firebaseConfig = {
       apiKey: "AIzaSyBdvUidNk2NewiYxTqSPEyxCDpCGpCgvNQ",
       authDomain: "controlefaltas-7cf63.firebaseapp.com",
@@ -282,49 +292,86 @@
       measurementId: "G-HSCWY7DCB1"
     };
 
-    // Inicializa o Firebase
+    // Inicializa Firebase
     firebase.initializeApp(firebaseConfig);
-    firebase.analytics(); // opcional, pode comentar se não usar
+    firebase.analytics();
     const db = firebase.firestore();
 
-    // --- MANTER TUDO que já estava funcionando ---
-    const registros = JSON.parse(localStorage.getItem('registros') || '[]');
     const formRegistro = document.getElementById('formRegistro');
     const alertMessage = document.getElementById('alertMessage');
+    const registrosTableBody = document.querySelector('#registrosTable tbody');
     const filterCSInput = document.getElementById('filterCS');
     const btnFilter = document.getElementById('btnFilter');
-    const registrosTableBody = document.querySelector('#registrosTable tbody');
     const alertWarning = document.getElementById('alertWarning');
     const exportAllBtn = document.getElementById('exportAllBtn');
 
-    function saveStorage() {
-      localStorage.setItem('registros', JSON.stringify(registros));
+    // Formata data dd/mm/aaaa para yyyy-mm-dd (input date)
+    function formatDateForInput(dateStr) {
+      const parts = dateStr.split('/');
+      if(parts.length !== 3) return '';
+      return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
     }
 
-    function formatarData(data) {
-      const [ano, mes, dia] = data.split('-');
-      return `${dia}/${mes}/${ano}`;
+    // Formata data para dd/mm/aaaa
+    function formatarData(date) {
+      if (!date) return '';
+      if (typeof date === 'string' && date.includes('-')) {
+        const [ano, mes, dia] = date.split('-');
+        return `${dia}/${mes}/${ano}`;
+      }
+      if (typeof date === 'string' && date.includes('/')) {
+        return date;
+      }
+      if (date instanceof Date) {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}/${m}/${y}`;
+      }
+      return '';
     }
 
-    function agruparPorMes(regs) {
-      const meses = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ];
-
-      return regs.reduce((acc, reg) => {
-        const [ano, mes] = reg.date.split('-');
-        const mesAno = `${meses[parseInt(mes, 10) - 1]}/${ano}`;
+    // Agrupa registros por mês/ano "MM/YYYY"
+    function agruparPorMes(registros) {
+      return registros.reduce((acc, reg) => {
+        let data = reg.date;
+        if (typeof data === 'string') {
+          // Tenta converter para Date
+          const partes = data.split('-');
+          if (partes.length === 3) {
+            data = new Date(data);
+          }
+        }
+        const d = new Date(data);
+        if (isNaN(d)) return acc;
+        const mesAno = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         if (!acc[mesAno]) acc[mesAno] = [];
         acc[mesAno].push(reg);
         return acc;
       }, {});
     }
 
+    // Carrega registros do Firestore e renderiza tabela
+    async function carregarRegistros() {
+      try {
+        alertWarning.style.display = 'none';
+        const snapshot = await db.collection('registros').orderBy('date', 'desc').get();
+        const registros = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        renderTable(registros);
+        checkWarnings(registros);
+      } catch (error) {
+        console.error('Erro ao carregar registros:', error);
+        alertMessage.textContent = 'Erro ao carregar registros.';
+        alertMessage.style.color = 'red';
+      }
+    }
+
+    // Renderiza tabela com registros
     function renderTable(dados, filtros = '') {
       registrosTableBody.innerHTML = '';
 
-      const filtroCS = filtros || filterCSInput.value;
+      const filtroCS = filtros || filterCSInput.value.trim();
       const filteredRegs = dados.filter(reg => !filtroCS || reg.cs.includes(filtroCS));
 
       const registrosAgrupados = agruparPorMes(filteredRegs);
@@ -337,10 +384,19 @@
         tdHeader.style.color = 'white';
         tdHeader.style.fontWeight = 'bold';
         tdHeader.textContent = mesAno;
+
+        // Botão exportar mês
+        const btnExportMonth = document.createElement('button');
+        btnExportMonth.textContent = 'Exportar Excel';
+        btnExportMonth.className = 'btn-export-month';
+        btnExportMonth.style.float = 'right';
+        btnExportMonth.onclick = () => exportarExcelPorMes(mesAno, registrosAgrupados[mesAno]);
+        tdHeader.appendChild(btnExportMonth);
+
         trHeader.appendChild(tdHeader);
         registrosTableBody.appendChild(trHeader);
 
-        registrosAgrupados[mesAno].forEach((reg, index) => {
+        registrosAgrupados[mesAno].forEach((reg) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${reg.name}</td>
@@ -350,101 +406,211 @@
             <td>${reg.saida || 'N/A'}</td>
             <td>${reg.atestado}</td>
             <td>${reg.motivo || 'N/A'}</td>
-            <td><button class="btn-edit" onclick="editFirestoreRegistro('${reg.id}')">Editar</button></td>
+            <td>
+              <button class="btn-edit" onclick="startEdit('${reg.id}', this)">Editar</button>
+              <button class="btn-delete" onclick="deleteFirestoreRegistro('${reg.id}')">Excluir</button>
+            </td>
           `;
           registrosTableBody.appendChild(tr);
         });
       }
     }
 
-    // Nova função para carregar do Firestore
-    function carregarRegistros(filtroCS = '') {
-      db.collection('registros').get()
-        .then((querySnapshot) => {
-          const dados = [];
-          querySnapshot.forEach((doc) => {
-            const obj = doc.data();
-            obj.id = doc.id;
-            dados.push(obj);
-          });
-          renderTable(dados, filtroCS);
-        })
-        .catch((error) => {
-          console.error("Erro ao buscar registros do Firestore:", error);
-        });
+    // Função para exibir alertas para faltas sem justificativas
+    function checkWarnings(registros) {
+      const faltasSemJustificativa = registros.filter(r =>
+        (r.atestado === 'Não' || !r.atestado) &&
+        (!r.motivo || r.motivo.trim() === '')
+      );
+
+      if (faltasSemJustificativa.length > 0) {
+        alertWarning.style.display = 'block';
+        alertWarning.textContent = `Existem ${faltasSemJustificativa.length} faltas sem justificativa ou atestado.`;
+      } else {
+        alertWarning.style.display = 'none';
+      }
     }
 
-    // Função de edição (apenas exemplo; você pode adaptar)
-    function editFirestoreRegistro(docId) {
-      // Aqui você pode carregar dados do documento com ID = docId e redirecionar para página editar, etc
-      // Exemplo simples:
-      db.collection('registros').doc(docId).get()
-        .then((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            // Por exemplo: armazenar no localStorage ou sessionStorage para passar para página editar
-            sessionStorage.setItem('editRegistroFirestore', JSON.stringify({ id: docId, data }));
-            window.location.href = 'editar.html'; 
-          }
-        });
+    // Exportar Excel completo (ano inteiro)
+    function exportarExcelCompleto() {
+      db.collection('registros').get().then(snapshot => {
+        const registros = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        exportarExcel(registros, 'Registros_Anual');
+      });
     }
 
-    btnFilter.addEventListener('click', () => {
-      const filtroCS = filterCSInput.value;
-      carregarRegistros(filtroCS);
-    });
+    // Exportar Excel por mês
+    function exportarExcelPorMes(mesAno, dadosMes) {
+      exportarExcel(dadosMes, `Registros_${mesAno.replace('/', '_')}`);
+    }
 
-    exportAllBtn.addEventListener('click', () => {
-      // Se quiser basear no Firestore, busque todos e exporte
-      db.collection('registros').get()
-        .then((qs) => {
-          const todos = [];
-          qs.forEach((doc) => {
-            todos.push(doc.data());
-          });
-          const wb = XLSX.utils.book_new();
-          const ws = XLSX.utils.json_to_sheet(todos);
-          XLSX.utils.book_append_sheet(wb, ws, "Faltas e Justificativas");
-          XLSX.writeFile(wb, "faltas_justificativas.xlsx");
-        });
-    });
+    // Função exportar para Excel
+    function exportarExcel(dados, nomeArquivo) {
+      if (dados.length === 0) {
+        alert('Nenhum registro para exportar.');
+        return;
+      }
+      const wb = XLSX.utils.book_new();
 
-    formRegistro.addEventListener('submit', (e) => {
-      e.preventDefault();
+      const ws_data = [
+        ['Nome', 'CS', 'Data Ocorrência', 'Entrada', 'Saída', 'Atestado', 'Motivo']
+      ];
 
-      const newRegistro = {
-        name: document.getElementById('name').value,
-        cs: document.getElementById('cs').value,
-        date: document.getElementById('date').value,
-        entrada: document.getElementById('entrada').value,
-        saida: document.getElementById('saida').value,
-        atestado: document.getElementById('atestado').value,
-        motivo: document.getElementById('motivo').value,
+      dados.forEach(reg => {
+        ws_data.push([
+          reg.name,
+          reg.cs,
+          formatarData(reg.date),
+          reg.entrada || '',
+          reg.saida || '',
+          reg.atestado,
+          reg.motivo || ''
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+      XLSX.writeFile(wb, nomeArquivo + '.xlsx');
+    }
+
+    // Adicionar registro no Firestore
+    async function adicionarRegistro(event) {
+      event.preventDefault();
+      alertMessage.textContent = '';
+
+      const registro = {
+        name: formRegistro.name.value.trim(),
+        cs: formRegistro.cs.value.trim(),
+        date: formRegistro.date.value,
+        entrada: formRegistro.entrada.value.trim() || '',
+        saida: formRegistro.saida.value.trim() || '',
+        atestado: formRegistro.atestado.value,
+        motivo: formRegistro.motivo.value.trim() || ''
       };
 
-      // Salva no Firestore
-      db.collection('registros').add(newRegistro)
+      if (!registro.name || !registro.cs || !registro.date || !registro.atestado) {
+        alertMessage.textContent = 'Preencha todos os campos obrigatórios.';
+        alertMessage.style.color = 'red';
+        return;
+      }
+
+      try {
+        await db.collection('registros').add(registro);
+        alertMessage.textContent = 'Registro adicionado com sucesso!';
+        alertMessage.style.color = 'green';
+        formRegistro.reset();
+        carregarRegistros();
+      } catch (error) {
+        console.error('Erro ao adicionar registro:', error);
+        alertMessage.textContent = 'Erro ao adicionar registro.';
+        alertMessage.style.color = 'red';
+      }
+    }
+
+    // Atualizar registro no Firestore
+    function updateFirestoreRegistro(docId, updatedData) {
+      db.collection('registros').doc(docId).update(updatedData)
         .then(() => {
-          alertMessage.innerHTML = 'Registro salvo com sucesso!';
+          alertMessage.textContent = 'Registro atualizado com sucesso!';
           alertMessage.style.color = 'green';
-          formRegistro.reset();
           carregarRegistros();
         })
-        .catch((error) => {
-          console.error("Erro ao salvar no Firestore:", error);
-          alertMessage.innerHTML = 'Erro ao salvar.';
+        .catch(error => {
+          console.error('Erro ao atualizar registro:', error);
+          alertMessage.textContent = 'Erro ao atualizar registro.';
           alertMessage.style.color = 'red';
         });
+    }
 
-      // Também mantém no localStorage (se quiser manter sincronização local)
-      registros.push(newRegistro);
-      saveStorage();
+    // Excluir registro do Firestore
+    function deleteFirestoreRegistro(docId) {
+      if (!confirm('Tem certeza que deseja excluir este registro?')) return;
 
-    });
+      db.collection('registros').doc(docId).delete()
+        .then(() => {
+          alertMessage.textContent = 'Registro excluído com sucesso!';
+          alertMessage.style.color = 'green';
+          carregarRegistros();
+        })
+        .catch(error => {
+          console.error('Erro ao excluir registro:', error);
+          alertMessage.textContent = 'Erro ao excluir registro.';
+          alertMessage.style.color = 'red';
+        });
+    }
 
-    // Ao carregar a página, buscar do Firestore
+    // Começar edição inline
+    function startEdit(docId, btn) {
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+
+      // Evitar abrir mais de uma edição ao mesmo tempo
+      if (document.querySelector('tr.editing')) {
+        alert('Finalize a edição atual antes de editar outro registro.');
+        return;
+      }
+      tr.classList.add('editing');
+
+      // Transforma células em inputs
+      tds[0].innerHTML = `<input type="text" value="${tds[0].textContent}" style="width:100%"/>`;
+      tds[1].innerHTML = `<input type="text" value="${tds[1].textContent}" style="width:100%"/>`;
+      tds[2].innerHTML = `<input type="date" value="${formatDateForInput(tds[2].textContent)}" style="width:100%"/>`;
+      tds[3].innerHTML = `<input type="text" value="${tds[3].textContent === 'N/A' ? '' : tds[3].textContent}" style="width:100%"/>`;
+      tds[4].innerHTML = `<input type="text" value="${tds[4].textContent === 'N/A' ? '' : tds[4].textContent}" style="width:100%"/>`;
+      tds[5].innerHTML = `
+        <select style="width:100%">
+          <option value="Não" ${tds[5].textContent === 'Não' ? 'selected' : ''}>Não</option>
+          <option value="Sim" ${tds[5].textContent === 'Sim' ? 'selected' : ''}>Sim</option>
+        </select>
+      `;
+      tds[6].innerHTML = `<textarea style="width:100%" rows="2">${tds[6].textContent === 'N/A' ? '' : tds[6].textContent}</textarea>`;
+
+      // Botões salvar e cancelar
+      tds[7].innerHTML = `
+        <button style="background:#27ae60; color:#fff; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="saveEdit('${docId}', this)">Salvar</button>
+        <button style="background:#95a5a6; color:#fff; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px;" onclick="cancelEdit(this)">Cancelar</button>
+      `;
+    }
+
+    // Salvar edição no Firestore
+    function saveEdit(docId, btn) {
+      const tr = btn.closest('tr');
+      const inputs = tr.querySelectorAll('input, select, textarea');
+
+      const updatedData = {
+        name: inputs[0].value.trim(),
+        cs: inputs[1].value.trim(),
+        date: inputs[2].value,
+        entrada: inputs[3].value.trim() || '',
+        saida: inputs[4].value.trim() || '',
+        atestado: inputs[5].value,
+        motivo: inputs[6].value.trim() || ''
+      };
+
+      if (!updatedData.name || !updatedData.cs || !updatedData.date || !updatedData.atestado) {
+        alertMessage.textContent = 'Campos obrigatórios não podem ficar vazios.';
+        alertMessage.style.color = 'red';
+        return;
+      }
+
+      updateFirestoreRegistro(docId, updatedData);
+    }
+
+    // Cancelar edição, recarregar tabela
+    function cancelEdit(btn) {
+      const tr = btn.closest('tr');
+      tr.classList.remove('editing');
+      carregarRegistros();
+      alertMessage.textContent = '';
+    }
+
+    // Event Listeners
+    formRegistro.addEventListener('submit', adicionarRegistro);
+    btnFilter.addEventListener('click', () => carregarRegistros());
+    exportAllBtn.addEventListener('click', exportarExcelCompleto);
+
+    // Inicializa tabela
     carregarRegistros();
-
   </script>
 </body>
 </html>
