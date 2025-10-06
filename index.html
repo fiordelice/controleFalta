@@ -33,47 +33,6 @@
       margin-top: 15px;
       font-weight: 600;
     }
-    /* Botões na linha de edição */
-.btn-edit,
-.btn-save,
-.btn-cancel {
-  padding: 6px 14px;
-  margin-right: 10px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  min-width: 80px;
-  transition: background-color 0.3s;
-}
-
-.btn-edit {
-  background-color: #6473ff;
-  color: white;
-  border: none;
-}
-.btn-edit:hover {
-  background-color: #4b5ecc;
-}
-
-.btn-save {
-  background-color: #27ae60;
-  color: white;
-  border: none;
-}
-.btn-save:hover {
-  background-color: #219150;
-}
-
-.btn-cancel {
-  background-color: #95a5a6;
-  color: white;
-  border: none;
-}
-.btn-cancel:hover {
-  background-color: #7f8c8d;
-}
-
     form input[type="text"],
     form input[type="date"],
     form select,
@@ -409,44 +368,53 @@
     }
 
     // Renderiza tabela com registros
-   function renderTable(dados, filtros = '') {
-  registrosTableBody.innerHTML = '';
+    function renderTable(dados, filtros = '') {
+      registrosTableBody.innerHTML = '';
 
-  const filtroCS = filtros || filterCSInput.value;
-  const filteredRegs = dados.filter(reg => !filtroCS || reg.cs.includes(filtroCS));
+      const filtroCS = filtros || filterCSInput.value.trim();
+      const filteredRegs = dados.filter(reg => !filtroCS || reg.cs.includes(filtroCS));
 
-  const registrosAgrupados = agruparPorMes(filteredRegs);
+      const registrosAgrupados = agruparPorMes(filteredRegs);
 
-  for (const mesAno in registrosAgrupados) {
-    const trHeader = document.createElement('tr');
-    const tdHeader = document.createElement('td');
-    tdHeader.colSpan = 8;
-    tdHeader.style.backgroundColor = '#2c3e50';
-    tdHeader.style.color = 'white';
-    tdHeader.style.fontWeight = 'bold';
-    tdHeader.textContent = mesAno;
-    trHeader.appendChild(tdHeader);
-    registrosTableBody.appendChild(trHeader);
+      for (const mesAno in registrosAgrupados) {
+        const trHeader = document.createElement('tr');
+        const tdHeader = document.createElement('td');
+        tdHeader.colSpan = 8;
+        tdHeader.style.backgroundColor = '#2c3e50';
+        tdHeader.style.color = 'white';
+        tdHeader.style.fontWeight = 'bold';
+        tdHeader.textContent = mesAno;
 
-    registrosAgrupados[mesAno].forEach((reg, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${reg.name}</td>
-        <td>${reg.cs}</td>
-        <td>${formatarData(reg.date)}</td>
-        <td>${reg.entrada || 'N/A'}</td>
-        <td>${reg.saida || 'N/A'}</td>
-        <td>${reg.atestado}</td>
-        <td>${reg.motivo || 'N/A'}</td>
-        <td><button class="btn-edit" onclick="editFirestoreRegistro('${reg.id}')">Editar</button></td>
-      `;
-      registrosTableBody.appendChild(tr);
-    });
-  }
+        // Botão exportar mês
+        const btnExportMonth = document.createElement('button');
+        btnExportMonth.textContent = 'Exportar Excel';
+        btnExportMonth.className = 'btn-export-month';
+        btnExportMonth.style.float = 'right';
+        btnExportMonth.onclick = () => exportarExcelPorMes(mesAno, registrosAgrupados[mesAno]);
+        tdHeader.appendChild(btnExportMonth);
 
-  destacarFaltasSemJustificativa(filteredRegs);
-}
+        trHeader.appendChild(tdHeader);
+        registrosTableBody.appendChild(trHeader);
 
+        registrosAgrupados[mesAno].forEach((reg) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${reg.name}</td>
+            <td>${reg.cs}</td>
+            <td>${formatarData(reg.date)}</td>
+            <td>${reg.entrada || 'N/A'}</td>
+            <td>${reg.saida || 'N/A'}</td>
+            <td>${reg.atestado}</td>
+            <td>${reg.motivo || 'N/A'}</td>
+            <td>
+              <button class="btn-edit" onclick="startEdit('${reg.id}', this)">Editar</button>
+              <button class="btn-delete" onclick="deleteFirestoreRegistro('${reg.id}')">Excluir</button>
+            </td>
+          `;
+          registrosTableBody.appendChild(tr);
+        });
+      }
+    }
 
     // Função para exibir alertas para faltas sem justificativas
     function checkWarnings(registros) {
@@ -646,4 +614,3 @@
   </script>
 </body>
 </html>
-
