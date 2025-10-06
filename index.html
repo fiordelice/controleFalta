@@ -12,157 +12,6 @@
       padding: 20px;
       color: #333;
     }
-    /* Botões padrão */
-button {
-  font-family: inherit;
-  font-weight: 700;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  padding: 8px 14px;
-  font-size: 14px;
-  user-select: none;
-}
-
-/* Botão registrar */
-form button[type="submit"] {
-  background-color: #27ae60;
-  color: #fff;
-  width: 100%;
-  max-width: 250px;
-  margin-top: 25px;
-}
-
-form button[type="submit"]:hover {
-  background-color: #219150;
-}
-
-/* Botões de filtro */
-.filter-section button {
-  background-color: #2980b9;
-  color: white;
-  padding: 9px 20px;
-  font-size: 16px;
-  border-radius: 5px;
-  width: auto;
-  margin-left: 10px;
-  min-width: 110px;
-}
-
-.filter-section button:hover {
-  background-color: #1c5d85;
-}
-
-/* Botão exportar ano */
-.btn-export-all {
-  background-color: #e67e22;
-  color: white;
-  border-radius: 6px;
-  padding: 10px 24px;
-  font-size: 16px;
-  font-weight: 700;
-  width: auto;
-  max-width: 220px;
-  margin-left: auto;
-  display: block;
-  cursor: pointer;
-}
-
-.btn-export-all:hover {
-  background-color: #cf6f1f;
-}
-
-/* Botões exportar mês */
-.btn-export-month {
-  background-color: #3498db;
-  color: white;
-  border-radius: 5px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  float: right;
-  margin-left: 12px;
-}
-
-.btn-export-month:hover {
-  background-color: #2c80b4;
-}
-
-/* Botões editar/excluir na tabela */
-td > button.btn-edit,
-td > button.btn-delete {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 4px;
-  margin-right: 8px;
-  min-width: 65px;
-  display: inline-block;
-  vertical-align: middle;
-  box-sizing: border-box;
-}
-
-td > button.btn-edit {
-  background-color: #6473ff;
-  color: white;
-}
-
-td > button.btn-edit:hover {
-  background-color: #4c5ad6;
-}
-
-td > button.btn-delete {
-  background-color: #e74c3c;
-  color: white;
-}
-
-td > button.btn-delete:hover {
-  background-color: #c0392b;
-}
-
-/* Botões salvar/cancelar inline edição */
-td > button[onclick^="saveEdit"] {
-  background-color: #27ae60;
-  color: white;
-  padding: 6px 12px;
-  font-weight: 600;
-  border-radius: 4px;
-  margin-right: 8px;
-  font-size: 13px;
-  min-width: 65px;
-  cursor: pointer;
-}
-
-td > button[onclick^="saveEdit"]:hover {
-  background-color: #219150;
-}
-
-td > button[onclick^="cancelEdit"] {
-  background-color: #95a5a6;
-  color: white;
-  padding: 6px 12px;
-  font-weight: 600;
-  border-radius: 4px;
-  font-size: 13px;
-  min-width: 65px;
-  cursor: pointer;
-}
-
-td > button[onclick^="cancelEdit"]:hover {
-  background-color: #7f8c8d;
-}
-
-/* Organizar botões de ação da tabela */
-td:last-child {
-  white-space: nowrap;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-  align-items: center;
-}
-
     header {
       text-align: center;
       margin-bottom: 30px;
@@ -413,7 +262,9 @@ td:last-child {
       <tbody></tbody>
       <tfoot>
         <tr>
-       
+          <td colspan="8" style="text-align:right;">
+            <button class="btn-export-all" id="exportAllBtn">Exportar Excel (Ano Completo)</button>
+          </td>
         </tr>
       </tfoot>
     </table>
@@ -763,5 +614,3 @@ td:last-child {
   </script>
 </body>
 </html>
-
-
